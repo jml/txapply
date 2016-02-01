@@ -17,11 +17,17 @@ def finished(value):
     print('Finished: {}'.format(value))
     reactor.stop()
 
-result = apply(function, some_deferred, name=other_deferred)
+result = txapply(function, some_deferred, name=other_deferred)
 result.addCallback(finished)
 
-
 ```
+
+## Warning
+
+This is unreleased, unsupported software that makes no claims to backwards
+compatibility or correctness.
+
+In particular, I dislike the name `txapply` and am likely to change it.
 
 ## License
 

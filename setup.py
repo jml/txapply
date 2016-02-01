@@ -43,10 +43,12 @@ if __name__ == "__main__":
         maintainer='Jonathan M. Lange',
         version=versioneer.get_version(),
         cmdclass=versioneer.get_cmdclass(),
-        install_requires=[],
+        install_requires=[
+            'Twisted',
+        ],
         extras_require={
             'tests': [
-                'testtools>=1.8.1',
+                'testtools>=1.9.0',
                 'hypothesis>=1.18.1',
             ],
         },

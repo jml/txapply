@@ -28,7 +28,7 @@ def _gather_results(deferreds):
     return d
 
 
-def _gather_dict(deferred_dict):
+def gather_dict(deferred_dict):
     """
     Gather a dictionary with Deferred values into a single Deferred.
 
@@ -59,9 +59,7 @@ def txapply(function, *args, **kwargs):
     ``txapply`` will call ``function`` with the results of these Deferreds,
     and return a Deferred that will fire with its result.
     """
-    d1 = _gather_results(args)
-    d2 = _gather_dict(kwargs)
-    d = _gather_results([d1, d2])
+    d = _gather_results([_gather_results(args), gather_dict(kwargs)])
 
     def got_real_args(result):
         [real_args, real_kwargs] = result

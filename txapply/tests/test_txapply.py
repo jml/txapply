@@ -23,7 +23,7 @@ from testtools.matchers import AfterPreprocessing, Equals, Is
 from testtools.twistedsupport import failed, succeeded
 from twisted.internet.defer import maybeDeferred, succeed
 
-from txapply import txapply
+from txapply import gather_dict, txapply
 
 
 def identity(x):
@@ -222,3 +222,20 @@ class ApplyTests(TestCase):
         self.assertThat(d, failed(
             AfterPreprocessing(lambda failure: failure.value,
                                Equals(exception))))
+
+
+class GatherDictTests(TestCase):
+    """
+    Tests for ``gather_dict``.
+    """
+
+    @given(dictionaries(any_value(), any_value()))
+    def test_gathers_dictionary(self, dictionary):
+        """
+        ``gather_dict`` returns a Deferred that fires with a dict that has the
+        keys of the original dict mapped to the results of the Deferreds which
+        were the values.
+        """
+        deferred_dict = {k: succeed(v) for (k, v) in dictionary.items()}
+        d = gather_dict(deferred_dict)
+        self.assertThat(d, succeeded(Equals(dictionary)))

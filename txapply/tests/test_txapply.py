@@ -10,10 +10,11 @@ import string
 
 from hypothesis import assume, given
 from hypothesis.strategies import (
+    builds,
+    characters,
     choices,
     dictionaries,
     integers,
-    just,
     lists,
     sampled_from,
     text,
@@ -54,25 +55,14 @@ def any_value():
     """
     Arbitrary values, with no constraints.
     """
-    return just(object())
-
-
-def _is_ascii(x):
-    """
-    Is `x` ASCII-encodable unicode?
-    """
-    try:
-        x.encode('ascii')
-    except UnicodeEncodeError:
-        return False
-    return True
+    return builds(object)
 
 
 def ascii_text():
     """
     Arbitrary ascii-encodable text.
     """
-    return text().filter(_is_ascii)
+    return text(characters(max_codepoint=128))
 
 
 def exceptions():
@@ -113,12 +103,26 @@ e.g. ``Foo``, ``bar``.
 """
 
 
+def arguments(min_size=0):
+    """
+    Arbitrary arguments to a function.
+    """
+    return lists(any_value(), min_size=min_size)
+
+
+def keyword_arguments():
+    """
+    Arbitrary keyword arguments to a function.
+    """
+    return dictionaries(identifiers, any_value())
+
+
 class ApplyTests(TestCase):
     """
     Tests for `txapply`.
     """
 
-    @given(any_value())
+    @given(anything=any_value())
     def test_identity(self, anything):
         """
         ``txapply(identity, deferred)`` is equivalent to ``deferred``.
@@ -126,7 +130,7 @@ class ApplyTests(TestCase):
         d = txapply(identity, succeed(anything))
         self.assertThat(d, succeeded(Is(anything)))
 
-    @given(unary_functions, integers())
+    @given(f=unary_functions, x=integers())
     def test_unary_function(self, f, x):
         """
         ``txapply(f, d)`` is equivalent to ``d.addCallback(f)``.
@@ -148,7 +152,7 @@ class ApplyTests(TestCase):
         d = txapply(f, succeed(x), succeed(y))
         self.assertThat(d, succeeded(Equals(f(x, y))))
 
-    @given(args=lists(any_value()))
+    @given(args=arguments())
     def test_positional_arguments(self, args):
         """
         The function given to ``txapply`` is called with the values from the
@@ -158,7 +162,7 @@ class ApplyTests(TestCase):
         d = txapply(lambda *a: a, *deferred_args)
         self.assertThat(d, succeeded(Equals(tuple(args))))
 
-    @given(dictionaries(identifiers, any_value()))
+    @given(kwargs=keyword_arguments())
     def test_keyword_arguments(self, kwargs):
         """
         The function given to ``txapply`` is called with keyword arguments from
@@ -176,7 +180,7 @@ class ApplyTests(TestCase):
         d = txapply(dict, **deferred_kwargs)
         self.assertThat(d, succeeded(Equals(kwargs)))
 
-    @given(lists(any_value()), dictionaries(identifiers, any_value()))
+    @given(args=arguments(), kwargs=keyword_arguments())
     def test_combination_arguments(self, args, kwargs):
         """
         If ``txapply`` is given a combination of positional and keyword
@@ -193,7 +197,7 @@ class ApplyTests(TestCase):
         d = txapply(capture, *deferred_args, **deferred_kwargs)
         self.assertThat(d, succeeded(Equals((tuple(args), kwargs))))
 
-    @given(lists(any_value()), dictionaries(identifiers, any_value()))
+    @given(args=arguments(), kwargs=keyword_arguments())
     def test_combination_arguments_deferred_function(self, args, kwargs):
         """
         If ``txapply`` is called with a function ``f`` that itself returns a
@@ -201,7 +205,6 @@ class ApplyTests(TestCase):
         calling ``f`` with the results of all of the ``Deferred`` objects
         passed to ``txapply``.
         """
-        deferred_args = map(succeed, args)
         deferred_args = map(succeed, args)
         deferred_kwargs = {
             key: succeed(value) for key, value in kwargs.items()
@@ -213,8 +216,13 @@ class ApplyTests(TestCase):
         d = txapply(capture, *deferred_args, **deferred_kwargs)
         self.assertThat(d, succeeded(Equals((tuple(args), kwargs))))
 
-    @given(lists(any_value(), min_size=1), exceptions(), choices())
+    @given(args=arguments(min_size=1), exception=exceptions(),
+           choice=choices())
     def test_exception_in_args(self, args, exception, choice):
+        """
+        If one of the arguments is a failing Deferred, then "reraise" that
+        failing Deferred.
+        """
         i = choice(range(len(args)))
         deferred_args = map(succeed, args)
         deferred_args[i] = maybeDeferred(throw, exception)

@@ -91,7 +91,7 @@ def arguments(min_size=0):
     """
     Arbitrary arguments to a function.
     """
-    return lists(any_value(), min_size=min_size)
+    return lists(any_value(), min_size=min_size).map(tuple)
 
 
 def keyword_arguments():

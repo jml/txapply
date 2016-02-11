@@ -21,3 +21,7 @@ def transparent(value, function, *args, **kwargs):
     """
     function(value, *args, **kwargs)
     return value
+
+
+def ignore(value, function, *args, **kwargs):
+    return function(*args, **kwargs)

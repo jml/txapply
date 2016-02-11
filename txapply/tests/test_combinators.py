@@ -8,7 +8,7 @@ from testtools.matchers import Equals, Is
 from testtools.twistedsupport import succeeded
 
 from twisted.internet.defer import succeed
-from .._combinators import nop, transparent
+from .._combinators import ignore, nop, transparent
 from .strategies import any_value, arguments, keyword_arguments
 
 
@@ -56,3 +56,22 @@ class TestTransparent(TestCase):
         d = succeed(first)
         d.addCallback(transparent, callback, *args, **kwargs)
         self.assertThat(log, Equals([(first, args, kwargs)]))
+
+
+class TestIgnore(TestCase):
+    """
+    Tests for ``ignore``.
+    """
+
+    @given(first=any_value(), second=any_value(), args=arguments(),
+           kwargs=keyword_arguments())
+    def test_ignores_callback_value(self, first, second, *args, **kwargs):
+        log = []
+
+        def callback(*a, **kw):
+            log.append((a, kw))
+            return second
+        d = succeed(first)
+        d.addCallback(ignore, callback, *args, **kwargs)
+        self.assertThat(d, succeeded(Is(second)))
+        self.assertThat(log, Equals([(args, kwargs)]))

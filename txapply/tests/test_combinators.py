@@ -104,3 +104,95 @@ class TestCombine(TestCase):
         d.addCallback(combine, callback, *args, **kwargs)
         self.assertThat(d, succeeded(Equals((second, first))))
         self.assertThat(log, Equals([(first, args, kwargs)]))
+
+
+class TestComposition(TestCase):
+    """
+    Make sure all this stuff can be used together.
+
+    Not so much describing desired behavior as documenting actual behavior.
+    """
+
+    @given(first=any_value(), second=any_value(), args=arguments(),
+           kwargs=keyword_arguments())
+    def test_transparent_ignore(self, first, second, args, kwargs):
+        log = []
+
+        def callback(*a, **kw):
+            log.append((a, kw))
+            return second
+
+        d = succeed(first)
+        d.addCallback(transparent, ignore, callback, *args, **kwargs)
+        self.assertThat(d, succeeded(Is(first)))
+        self.assertThat(log, Equals([(args, kwargs)]))
+
+    @given(first=any_value(), second=any_value(), args=arguments(),
+           kwargs=keyword_arguments())
+    def test_transparent_combine(self, first, second, args, kwargs):
+        log = []
+
+        def callback(value, *a, **kw):
+            log.append((value, a, kw))
+            return second
+
+        d = succeed(first)
+        d.addCallback(transparent, combine, callback, *args, **kwargs)
+        self.assertThat(d, succeeded(Is(first)))
+        self.assertThat(log, Equals([(first, args, kwargs)]))
+
+    @given(first=any_value(), second=any_value(), args=arguments(),
+           kwargs=keyword_arguments())
+    def test_combine_transparent(self, first, second, args, kwargs):
+        log = []
+
+        def callback(value, *a, **kw):
+            log.append((value, a, kw))
+            return second
+
+        d = succeed(first)
+        d.addCallback(combine, transparent, callback, *args, **kwargs)
+        self.assertThat(d, succeeded(Equals((first, first))))
+        self.assertThat(log, Equals([(first, args, kwargs)]))
+
+    @given(first=any_value(), second=any_value(), args=arguments(),
+           kwargs=keyword_arguments())
+    def test_combine_ignore(self, first, second, args, kwargs):
+        log = []
+
+        def callback(*a, **kw):
+            log.append((a, kw))
+            return second
+
+        d = succeed(first)
+        d.addCallback(combine, ignore, callback, *args, **kwargs)
+        self.assertThat(d, succeeded(Equals((second, first))))
+        self.assertThat(log, Equals([(args, kwargs)]))
+
+    @given(first=any_value(), second=any_value(), args=arguments(),
+           kwargs=keyword_arguments())
+    def test_combine_combine(self, first, second, args, kwargs):
+        log = []
+
+        def callback(value, *a, **kw):
+            log.append((value, a, kw))
+            return second
+
+        d = succeed(first)
+        d.addCallback(combine, combine, callback, *args, **kwargs)
+        self.assertThat(d, succeeded(Equals(((second, first), first))))
+        self.assertThat(log, Equals([(first, args, kwargs)]))
+
+    @given(first=any_value(), second=any_value(), args=arguments(),
+           kwargs=keyword_arguments())
+    def test_transparent_transparent(self, first, second, args, kwargs):
+        log = []
+
+        def callback(value, *a, **kw):
+            log.append((value, a, kw))
+            return second
+
+        d = succeed(first)
+        d.addCallback(transparent, transparent, callback, *args, **kwargs)
+        self.assertThat(d, succeeded(Is(first)))
+        self.assertThat(log, Equals([(first, args, kwargs)]))

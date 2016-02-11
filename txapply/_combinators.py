@@ -2,6 +2,8 @@
 Helpers for adding callbacks and errbacks.
 """
 
+from functools import wraps
+
 
 def nop(*args, **kwargs):
     """
@@ -24,6 +26,18 @@ def transparent(value, function, *args, **kwargs):
     return value
 
 
+def transparently(function):
+    """
+    Wrap ``function`` so that it is called, but that the first parameter is
+    returned.
+    """
+    @wraps(function)
+    def decorated(value, *args, **kwargs):
+        function(value, *args, **kwargs)
+        return value
+    return decorated
+
+
 def ignore(value, function, *args, **kwargs):
     """
     Invoke ``function`` with ``*args`` and ``*kwargs``.
@@ -36,6 +50,16 @@ def ignore(value, function, *args, **kwargs):
        37
     """
     return function(*args, **kwargs)
+
+
+def ignored(function):
+    """
+    Wrap ``function`` so that it discards its first parameter.
+    """
+    @wraps(function)
+    def decorated(value, *args, **kwargs):
+        return function(*args, **kwargs)
+    return decorated
 
 
 def combine(value, function, *args, **kwargs):
@@ -55,3 +79,15 @@ def combine(value, function, *args, **kwargs):
     """
     y = function(value, *args, **kwargs)
     return (y, value)
+
+
+def combined(function):
+    """
+    Wrap ``function`` so that it returns a tuple of its return value and its
+    first parameter.
+    """
+    @wraps(function)
+    def decorated(value, *args, **kwargs):
+        y = function(value, *args, **kwargs)
+        return (y, value)
+    return decorated
